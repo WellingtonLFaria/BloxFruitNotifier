@@ -1,6 +1,6 @@
 import requests
 import time
-from threading import Thread
+from threading import Thread, Event
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -30,10 +30,13 @@ def mostrarFrutas(frutas):
         c += 1
 
 frutasDesejadas = []
+encerrar_thread = False
 
 def verificarFrutas():
     global frutasDesejadas
-    while True:
+    global encerrar_thread
+
+    while not encerrar_thread:
         for fruta in frutasDesejadas:
             if fruta in eval(requests.get("http://127.0.0.1:8080/inStock").text):
                 subject = "Fruta desejada está na loja!"
@@ -45,13 +48,17 @@ def verificarFrutas():
                 send_email(subject, message, from_email, to_email, password)
         time.sleep(25)
 
-Thread(target=verificarFrutas).start()
+verificar = Thread(target=verificarFrutas)
+verificar.start()
 
 while True:
     print("="*50)
     print("[1] Ver frutas na lista de desejos\n[2] Adicionar fruta a lista de desejos\n[3] Remover fruta desejada\n[4] Ver todas as frutas da loja\n[5] Ver frutas no estoque\n[0] Sair")
     opcao = int(input(":"))
     if opcao == 0:
+        print("Saindo... aguarde alguns instantes!")
+        encerrar_thread = True
+        verificar.join()
         break
     elif opcao == 1:
         if len(frutasDesejadas) == 0: print("Nenhuma fruta na lista de desejos ainda!")
