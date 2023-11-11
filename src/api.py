@@ -4,8 +4,12 @@ from selenium.webdriver.common.by import By
 from threading import Thread
 import time
 from db import DB
+from dotenv import load_dotenv
+from os import getenv
 
-db = DB("localhost", "root", "fatec", "notifierusers")
+load_dotenv()
+
+db = DB("localhost", getenv("DB_USER"), getenv("DB_PASSWORD"), getenv("DB"))
 db.setUp()
 
 todas_frutas = []
