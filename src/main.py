@@ -1,27 +1,78 @@
-import requests
 import time
-from threading import Thread, Event
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from threading import Thread
 from dotenv import load_dotenv
 from os import getenv
+from mail import send_email
 
 load_dotenv()
 
-def send_email(subject, message, from_email, to_email, password):
-    msg = MIMEMultipart()
-    msg['From'] = from_email
-    msg['To'] = to_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(message, 'plain'))
+todas_frutas = []
+estoque = []
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(from_email, password)
-    text = msg.as_string()
-    server.sendmail(from_email, to_email, text)
-    server.quit()
+def todasFrutas():
+    global todas_frutas
+
+    frutas = []
+    driver = webdriver.Chrome()
+    driver.get("https://blox-fruits.fandom.com/wiki/Blox_Fruits_%22Stock%22")
+    linhas = driver.find_element(By.CLASS_NAME, "article-table").find_element(By.TAG_NAME, "tbody").find_elements(By.TAG_NAME, "tr")
+    for linha in linhas:
+        colunas = linha.find_elements(By.TAG_NAME, "td")
+        nomeFruta = colunas[1].find_element(By.TAG_NAME, "a").get_attribute("title")
+        frutas.append(nomeFruta)
+    todas_frutas = frutas
+    driver.quit()
+
+    hora = 0
+    min = 0
+    while True:
+        tempo = time.localtime()
+        if tempo.tm_min == min and tempo.tm_hour == hora:
+            frutas = []
+            driver = webdriver.Chrome()
+            driver.get("https://blox-fruits.fandom.com/wiki/Blox_Fruits_%22Stock%22")
+            linhas = driver.find_element(By.CLASS_NAME, "article-table").find_element(By.TAG_NAME, "tbody").find_elements(By.TAG_NAME, "tr")
+            for linha in linhas:
+                colunas = linha.find_elements(By.TAG_NAME, "td")
+                nomeFruta = colunas[1].find_element(By.TAG_NAME, "a").get_attribute("title")
+                frutas.append(nomeFruta)
+            todas_frutas = frutas
+            driver.quit()
+        time.sleep(25)
+
+
+def buscarFrutas():
+    global estoque
+
+    driver = webdriver.Chrome()
+    driver.get("https://blox-fruits.fandom.com/wiki/Blox_Fruits_%22Stock%22")
+    figures = driver.find_elements(By.CLASS_NAME, "thumb")
+    frutas = []
+    for e in figures:
+        if e.find_element(By.TAG_NAME, "a").get_attribute("href")[36:] in frutas: break
+        else: frutas.append(e.find_element(By.TAG_NAME, "a").get_attribute("href")[36:])
+    driver.quit()
+    estoque = frutas
+
+    horas = [[1, 10], [5, 10], [9, 10], [13, 10], [17, 10], [21, 10]]
+    while True:
+        tempo = time.localtime()
+        if [tempo.tm_hour, tempo.tm_min] in horas:
+            driver = webdriver.Chrome()
+            driver.get("https://blox-fruits.fandom.com/wiki/Blox_Fruits_%22Stock%22")
+            figures = driver.find_elements(By.CLASS_NAME, "thumb")
+            frutas = []
+            for e in figures:
+                if e.find_element(By.TAG_NAME, "a").get_attribute("href")[36:] in frutas: break
+                else: frutas.append(e.find_element(By.TAG_NAME, "a").get_attribute("href")[36:])
+            driver.quit()
+            estoque = frutas
+        time.sleep(25)
+
+Thread(target=todasFrutas).start()
+Thread(target=buscarFrutas).start()
 
 def mostrarFrutas(frutas):
     c = 1
@@ -35,10 +86,10 @@ encerrar_thread = False
 def verificarFrutas():
     global frutasDesejadas
     global encerrar_thread
-
+    global estoque
     while not encerrar_thread:
         for fruta in frutasDesejadas:
-            if fruta in eval(requests.get("http://127.0.0.1:8080/inStock").text):
+            if fruta in estoque:
                 subject = "Fruta desejada está na loja!"
                 message = ""
                 from_email = getenv("FROM_EMAIL")
@@ -64,11 +115,10 @@ while True:
         if len(frutasDesejadas) == 0: print("Nenhuma fruta na lista de desejos ainda!")
         else: mostrarFrutas(frutasDesejadas)
     elif opcao == 2:
-        allFruits = eval(requests.get("http://127.0.0.1:8080/allBloxFruits").text)
-        mostrarFrutas(allFruits)
+        mostrarFrutas(todas_frutas)
         fruta = int(input("Informe qual fruta deseja adicionar a lista de desejos: "))
-        if allFruits[fruta-1] in frutasDesejadas: print("Fruta já está na lista de desejos")
-        else: frutasDesejadas.append(allFruits[fruta-1])
+        if todas_frutas[fruta-1] in frutasDesejadas: print("Fruta já está na lista de desejos")
+        else: frutasDesejadas.append(todas_frutas[fruta-1])
     elif opcao == 3:
         mostrarFrutas(frutasDesejadas)
         fruta = int(input("Informe qual fruta deseja remover da lista de desejos: "))
@@ -77,9 +127,7 @@ while True:
         except:
             print("Ocorreu um erro ao remover a fruta!")
     elif opcao == 4:
-        allFruits = eval(requests.get("http://127.0.0.1:8080/allBloxFruits").text)
-        mostrarFrutas(allFruits)
+        mostrarFrutas(todas_frutas)
     elif opcao == 5:
-        estoque = eval(requests.get("http://127.0.0.1:8080/inStock").text)
         mostrarFrutas(estoque)
     else: print("Opcao inválida!")

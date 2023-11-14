@@ -3,14 +3,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from threading import Thread
 import time
-from db import DB
-from dotenv import load_dotenv
-from os import getenv
-
-load_dotenv()
-
-db = DB("localhost", getenv("DB_USER"), getenv("DB_PASSWORD"), getenv("DB"))
-db.setUp()
 
 todas_frutas = []
 estoque = []
@@ -87,22 +79,5 @@ def allBloxFruits():
 @app.route("/inStock", methods=["GET"])
 def inStock():
     return estoque
-
-@app.route("/register", methods=["POST"])
-def register():
-    if request.method == "POST":
-        dados = request.json
-        return db.addUser(dados["username"], dados["password"], dados["email"])
-
-@app.route("/login", methods=["POST"])
-def login():
-    if request.method == "POST":
-        dados = request.json
-        users = [(user[0], user[1]) for user in db.users()]
-        usernames = [user[0] for user in users]
-        if dados["username"] in usernames:
-            if (dados["username"], dados["password"]) in users: return "Login realizado com sucesso"
-            else: return "Senha incorreta"
-        else: return "Nome de usuário ainda não cadastrado"
 
 app.run(host="127.0.0.1", port=8080)
