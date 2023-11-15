@@ -7,7 +7,7 @@ Blox Fruit Notifier is an application where the user selects the desired fruits 
 ## Creating .env file and configuring variables
 
 To have the send notification functionality working, you need to configure the email address that will send the notification and your password in the .env file.
-Variables:
+Variables in the .env file:
 ```
 FROM_EMAIL = "notification@email.com"
 FROM_EMAIL_PASSWORD = "notification_email_password"
