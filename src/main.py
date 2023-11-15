@@ -9,8 +9,7 @@ load_dotenv()
 
 wscraping = WebScraping()
 
-Thread(target=wscraping.todasFrutas).start()
-Thread(target=wscraping.buscarFrutas).start()
+wscraping.setUp()
 
 def mostrarFrutas(frutas):
     c = 1
@@ -23,6 +22,15 @@ encerrar_thread = False
 userEmail = None
 
 def verificarFrutas():
+    """
+    This function checks if the desired fruits are available in the store and sends an email notification to the user if any of the fruits are found.
+
+    Parameters:
+    None
+
+    Return:
+    None
+    """
     global frutasDesejadas
     global encerrar_thread
     global userEmail
@@ -31,7 +39,7 @@ def verificarFrutas():
             if userEmail == None: pass
             else:
                 if fruta in wscraping.estoque:
-                    subject = "Fruta desejada está na loja!"
+                    subject = "Wishlist fruit is in store!"
                     message = ""
                     from_email = getenv("FROM_EMAIL")
                     to_email = userEmail
@@ -45,33 +53,34 @@ verificar.start()
 
 while True:
     print("="*50)
-    print("[1] Ver frutas na lista de desejos\n[2] Adicionar fruta a lista de desejos\n[3] Remover fruta desejada\n[4] Ver todas as frutas da loja\n[5] Ver frutas no estoque\n[6] Configurar email de notificação\n[0] Sair")
+    print("[1] See fruits on wish list\n[2] Add fruit to wish list\n[3] Remove fruit from wishlistt\n[4] See all fruits in the store\n[5] View fruits in stock\n[6] Configure notification email\n[0] Exit")
     opcao = int(input(":"))
     if opcao == 0:
-        print("Saindo... aguarde alguns instantes!")
+        print("Leaving... wait a few moments!")
         encerrar_thread = True
         verificar.join()
+        wscraping.endThreads()
         break
     elif opcao == 1:
-        if len(frutasDesejadas) == 0: print("Nenhuma fruta na lista de desejos ainda!")
+        if len(frutasDesejadas) == 0: print("No fruit on the wish list yet!")
         else: mostrarFrutas(frutasDesejadas)
     elif opcao == 2:
         mostrarFrutas(wscraping.todas_frutas)
-        fruta = int(input("Informe qual fruta deseja adicionar a lista de desejos: "))
-        if wscraping.todas_frutas[fruta-1] in frutasDesejadas: print("Fruta já está na lista de desejos")
+        fruta = int(input("Enter which fruit you want to add to the wish list:"))
+        if wscraping.todas_frutas[fruta-1] in frutasDesejadas: print("Fruit is already on the wish list")
         else: frutasDesejadas.append(wscraping.todas_frutas[fruta-1])
     elif opcao == 3:
         mostrarFrutas(frutasDesejadas)
-        fruta = int(input("Informe qual fruta deseja remover da lista de desejos: "))
+        fruta = int(input("Enter which fruit you want to remove from your wish list:"))
         try:
             frutasDesejadas.pop(fruta-1)
         except:
-            print("Ocorreu um erro ao remover a fruta!")
+            print("An error occurred while removing the fruit!")
     elif opcao == 4:
         mostrarFrutas(wscraping.todas_frutas)
     elif opcao == 5:
         mostrarFrutas(wscraping.estoque)
     elif opcao == 6:
-        userEmail = input("Insira seu email: ")
-        print("Email configurado!")
-    else: print("Opcao inválida!")
+        userEmail = input("Enter your email:")
+        print("Email configured!")
+    else: print("Invalid option!")
